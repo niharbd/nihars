@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Nihar's Signal Scanner</title>
+</head>
+<body>
+    <h1>📈 Nihar's Signal Scanner (Live)</h1>
+    {% if signals %}
+        <table border="1">
+            <tr>
+                <th>Coin</th>
+                <th>Type</th>
+                <th>Confidence</th>
+                <th>Entry</th>
+                <th>TP</th>
+                <th>SL</th>
+                <th>Why Detected</th>
+                <th>Signal Time</th>
+            </tr>
+            {% for s in signals %}
+                <tr>
+                    <td>{{ s['symbol'] }}</td>
+                    <td>{{ s['type'] }}</td>
+                    <td>{{ s['confidence'] }}</td>
+                    <td>{{ s['entry'] }}</td>
+                    <td>{{ s['tp'] }}</td>
+                    <td>{{ s['sl'] }}</td>
+                    <td>{{ s['reason'] }}</td>
+                    <td>{{ s['time'] }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>No valid breakout or breakdown signals detected right now.</p>
+    {% endif %}
+</body>
+</html>
