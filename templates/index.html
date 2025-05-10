@@ -1,31 +1,48 @@
-
 <!DOCTYPE html>
 <html>
 <head>
     <title>Nihar's Signal Scanner</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ccc; }
-        th { background-color: #444; color: white; }
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+        th { background-color: #f2f2f2; }
+        .header { font-size: 24px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
-    <h1>📈 Nihar's Signal Scanner (Live)</h1>
+    <div class="header">📈 Nihar's Signal Scanner (Live Trading)</div>
     {% if signals %}
-    <table>
-        <tr>
-            <th>Coin</th><th>Type</th><th>Confidence</th><th>Entry</th><th>TP</th><th>SL</th><th>Why Detected</th><th>Signal Time</th>
-        </tr>
-        {% for s in signals %}
-        <tr>
-            <td>{{ s.symbol }}</td><td>{{ s.type }}</td><td>{{ s.confidence }}</td><td>{{ s.entry }}</td>
-            <td>{{ s.tp }}</td><td>{{ s.sl }}</td><td>{{ s.reason }}</td><td>{{ s.time }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+        <table>
+            <thead>
+                <tr>
+                    <th>Coin</th>
+                    <th>Type</th>
+                    <th>Confidence</th>
+                    <th>Entry</th>
+                    <th>TP</th>
+                    <th>SL</th>
+                    <th>Why Detected</th>
+                    <th>Signal Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for signal in signals %}
+                <tr>
+                    <td>{{ signal.symbol }}</td>
+                    <td>{{ signal.type }}</td>
+                    <td>{{ signal.confidence }}</td>
+                    <td>{{ signal.entry }}</td>
+                    <td>{{ signal.tp }}</td>
+                    <td>{{ signal.sl }}</td>
+                    <td>{{ signal.explanation }}</td>
+                    <td>{{ signal.time }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     {% else %}
-    <p>No valid breakout or breakdown signals detected right now.</p>
+        <p>No valid breakout or breakdown signals detected right now.</p>
     {% endif %}
 </body>
 </html>
