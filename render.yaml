@@ -1,6 +1,15 @@
+<<<<<<< HEAD
 services:
   - type: web
     name: nihars
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: python app.py
+=======
+services:
+  - type: web
+    name: nihars
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+>>>>>>> 1df07336dfb09dda7d65b475a7d40f8b98d18f8a
