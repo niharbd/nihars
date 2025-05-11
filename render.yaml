@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 type: web
 name: nihars-signal-scanner
 runtime: python
@@ -7,13 +6,3 @@ startCommand: streamlit run app.py
 envVars:
   - key: PYTHON_VERSION
     value: 3.11
-=======
-type: web
-name: nihars-signal-scanner
-runtime: python
-buildCommand: pip install -r requirements.txt
-startCommand: streamlit run app.py
-envVars:
-  - key: PYTHON_VERSION
-    value: 3.11
->>>>>>> b6dff15fd799cb879acde10f8f4ccf15e5bf28ea
