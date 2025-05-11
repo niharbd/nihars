@@ -122,29 +122,35 @@ def scan_market():
         l15 = df_15m.iloc[-1]
         l1h = df_1h.iloc[-1]
 
+        # --- Conservative Filters ---
+        if l15["ADX"] < 25 or l1h["ADX"] < 25:
+            continue
+        if not (60 <= l15["RSI"] <= 80 and 60 <= l1h["RSI"] <= 80):
+            continue
+        if l15["RVOL"] < 2:
+            continue
+        macd_recent_crossed = (
+            df_15m["MACD"].iloc[-2] < df_15m["MACD_Signal"].iloc[-2] and
+            l15["MACD"] > l15["MACD_Signal"]
+        )
+        if not macd_recent_crossed:
+            continue
+
         breakout = (
             l15["Close"] > l15["EMA20"] > l15["EMA50"] and
-            l1h["Close"] > l1h["EMA20"] > l1h["EMA50"] and
-            l15["RSI"] > 60 and l1h["RSI"] > 60 and
-            l15["MACD"] > l15["MACD_Signal"] and
-            l15["ADX"] > 20 and l15["RVOL"] > 1.5
+            l1h["Close"] > l1h["EMA20"] > l1h["EMA50"]
         )
 
         breakdown = (
             l15["Close"] < l15["EMA20"] < l15["EMA50"] and
-            l1h["Close"] < l1h["EMA20"] < l1h["EMA50"] and
-            l15["RSI"] < 40 and l1h["RSI"] < 40 and
-            l15["MACD"] < l15["MACD_Signal"] and
-            l15["ADX"] > 20 and l15["RVOL"] > 1.5
+            l1h["Close"] < l1h["EMA20"] < l1h["EMA50"]
         )
 
         if (breakout or breakdown) and not is_recent_news(symbol):
             entry = l15["Close"]
             atr = l15["ATR"]
-            rr_multiplier = 2.0  # risk/reward
-
-            tp = round(entry + rr_multiplier * atr, 4) if breakout else round(entry - rr_multiplier * atr, 4)
-            sl = round(entry - atr, 4) if breakout else round(entry + atr, 4)
+            tp = round(entry + 1.2 * atr, 4) if breakout else round(entry - 1.2 * atr, 4)
+            sl = round(entry - 0.8 * atr, 4) if breakout else round(entry + 0.8 * atr, 4)
             signal_type = "Breakout" if breakout else "Breakdown"
             now_bst = datetime.now(pytz.timezone("Asia/Dhaka")).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -170,7 +176,7 @@ def scan_market():
                     "Entry": round(entry, 4),
                     "TP": tp,
                     "SL": sl,
-                    "Why Detected": "ML-confirmed: EMA, RSI, MACD, ADX, Volume, ATR",
+                    "Why Detected": "Safe: Trend + Volume + Confirmation + ML",
                     "Signal Time": now_bst
                 }
 

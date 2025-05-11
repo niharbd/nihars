@@ -1,4 +1,3 @@
-
 import streamlit as st
 from scanner import scan_market
 import pandas as pd
@@ -8,9 +7,9 @@ from datetime import datetime
 st.set_page_config(page_title="Nihar's Signal Scanner", layout="wide")
 st.title("📈 Nihar's Signal Scanner")
 
-# Tabs
-tab1, tab2 = st.tabs(["🔍 Live Signals", "📊 Signal History"])
+tab1, tab2, tab3 = st.tabs(["🔍 Live Signals", "📊 Signal History", "📈 Performance Report"])
 
+# --- TAB 1: Live Signals ---
 with tab1:
     with st.spinner("Scanning Binance Futures..."):
         signals, scan_time = scan_market()
@@ -34,6 +33,7 @@ with tab1:
             with col3:
                 st.success(f"TP: {row['TP']}  \nSL: {row['SL']}")
 
+# --- TAB 2: Signal History ---
 with tab2:
     st.subheader("📊 Signal Log & Results")
     if os.path.exists("signals_log.csv"):
@@ -52,3 +52,42 @@ with tab2:
         st.download_button("⬇️ Download CSV", csv, "signals_log.csv", "text/csv")
     else:
         st.warning("No signal log found yet.")
+
+# --- TAB 3: Performance Report ---
+with tab3:
+    st.subheader("📈 Performance Report")
+    if os.path.exists("signals_log.csv"):
+        df = pd.read_csv("signals_log.csv")
+        df = df[df["result"].isin([0, 1])]
+        df["signal_time"] = pd.to_datetime(df["signal_time"], errors="coerce")
+        df["hour"] = df["signal_time"].dt.hour
+        df["weekday"] = df["signal_time"].dt.day_name()
+
+        total = len(df)
+        wins = df["result"].sum()
+        losses = total - wins
+        win_rate = (wins / total * 100) if total else 0
+        avg_conf = df["confidence"].mean()
+
+        st.metric("Total Signals", total)
+        st.metric("TP Hit", wins)
+        st.metric("SL Hit", losses)
+        st.metric("Win Rate", f"{win_rate:.2f}%")
+        st.metric("Avg Confidence", f"{avg_conf:.1f}%")
+
+        st.subheader("📊 Confidence Distribution")
+        st.bar_chart(df["confidence"])
+
+        st.subheader("📅 Win Rate by Hour")
+        hour_stats = df.groupby("hour")["result"].mean() * 100
+        st.bar_chart(hour_stats)
+
+        st.subheader("📅 Win Rate by Day of Week")
+        day_stats = df.groupby("weekday")["result"].mean() * 100
+        st.bar_chart(day_stats)
+
+        st.subheader("🪙 Signal Count by Coin")
+        coin_stats = df["symbol"].value_counts()
+        st.bar_chart(coin_stats)
+    else:
+        st.warning("No signals with results to analyze yet.")
