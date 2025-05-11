@@ -1,4 +1,3 @@
-
 import streamlit as st
 from scanner import scan_market
 from datetime import datetime
