@@ -30,11 +30,12 @@ def scan_market():
         confidence = random.choice([80, 85, 90, 95])
 
         if signal_type == "Breakout":
-            tp = round(price * 1.05, 4)
-            sl = round(price * 0.98, 4)
-        else:
-            tp = round(price * 0.95, 4)
-            sl = round(price * 1.02, 4)
+            tp = round(entry_price * 1.05, 4)  # 5% above
+            sl = round(entry_price * 0.98, 4)  # 2% below
+        else:  # Breakdown
+            tp = round(entry_price * 0.95, 4)  # 5% below ⬅️ FIXED
+            sl = round(entry_price * 1.02, 4)  # 2% above ⬅️ FIXED
+
 
         # Convert UTC to BST (Bangladesh Standard Time)
         now_bst = datetime.utcnow().replace(tzinfo=pytz.UTC).astimezone(pytz.timezone("Asia/Dhaka"))
