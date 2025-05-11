@@ -1,14 +1,31 @@
-from flask import Flask, render_template
+import streamlit as st
+import pandas as pd
+from datetime import datetime
 from scanner import scan_market
-import os
 
-app = Flask(__name__, template_folder="templates")
+# Set up Streamlit page
+st.set_page_config(page_title="📈 Nihar's Signal Scanner", layout="wide")
+st.title("📈 Nihar's Signal Scanner (Live Trading)")
 
-@app.route("/")
-def home():
-    signals = scan_market()
-    return render_template("index.html", signals=signals)
+# Fetch signals
+signals = scan_market()
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+if not signals or signals.empty:
+    st.info("No valid breakout or breakdown signals detected right now.")
+else:
+    st.markdown("### ✅ High Confidence Signals (≥80%)")
+
+    styled_df = signals.style.format({
+        "Entry": "{:.4f}",
+        "TP1": "{:.4f}",
+        "TP2": "{:.4f}",
+        "TP3": "{:.4f}",
+        "SL": "{:.4f}",
+    })
+    st.dataframe(styled_df)
+
+# Auto-refresh every 10 minutes
+st.markdown(
+    f"<script>setTimeout(function(){{window.location.reload();}}, {10 * 60 * 1000});</script>",
+    unsafe_allow_html=True
+)
