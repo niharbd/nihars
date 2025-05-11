@@ -1,11 +1,5 @@
-<<<<<<< HEAD
 streamlit
 pandas
 requests
 pytz
-=======
-streamlit
-pandas
-requests
-pytz
->>>>>>> b6dff15fd799cb879acde10f8f4ccf15e5bf28ea
+
