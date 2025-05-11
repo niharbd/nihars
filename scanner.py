@@ -1,3 +1,4 @@
+
 import pandas as pd
 import requests
 from datetime import datetime
@@ -5,8 +6,7 @@ import pytz
 import os
 import joblib
 from utils import fetch_klines
-
-# === Indicator Functions ===
+from signal_logger import log_signal
 
 def compute_rsi(series, period=14):
     delta = series.diff()
@@ -50,8 +50,6 @@ def compute_relative_volume(df, period=20):
     avg_vol = df["Volume"].rolling(window=period).mean()
     return df["Volume"] / avg_vol
 
-# === Sentiment + News Filters ===
-
 def get_fear_greed_index():
     try:
         url = "https://api.alternative.me/fng/"
@@ -80,8 +78,6 @@ def is_recent_news(symbol):
         pass
     return False
 
-# === ML Model Loader ===
-
 def load_model(path="model.pkl"):
     try:
         if os.path.exists(path):
@@ -90,16 +86,12 @@ def load_model(path="model.pkl"):
         pass
     return None
 
-# === Symbol Fetcher ===
-
 def get_all_usdt_futures_symbols():
     try:
         data = requests.get("https://fapi.binance.com/fapi/v1/exchangeInfo").json()
         return [s["symbol"] for s in data["symbols"] if s["contractType"] == "PERPETUAL" and s["quoteAsset"] == "USDT"]
     except:
         return []
-
-# === Main Scan Function ===
 
 def scan_market():
     fgi = get_fear_greed_index()
@@ -149,7 +141,9 @@ def scan_market():
         if (breakout or breakdown) and not is_recent_news(symbol):
             entry = l15["Close"]
             atr = l15["ATR"]
-            tp = round(entry + 1.5 * atr, 4) if breakout else round(entry - 1.5 * atr, 4)
+            rr_multiplier = 2.0  # risk/reward
+
+            tp = round(entry + rr_multiplier * atr, 4) if breakout else round(entry - rr_multiplier * atr, 4)
             sl = round(entry - atr, 4) if breakout else round(entry + atr, 4)
             signal_type = "Breakout" if breakout else "Breakdown"
             now_bst = datetime.now(pytz.timezone("Asia/Dhaka")).strftime("%Y-%m-%d %H:%M:%S")
@@ -169,7 +163,7 @@ def scan_market():
                 confidence = 90
 
             if confidence >= 80:
-                results.append({
+                row = {
                     "Coin": symbol,
                     "Type": signal_type,
                     "Confidence": confidence,
@@ -178,6 +172,19 @@ def scan_market():
                     "SL": sl,
                     "Why Detected": "ML-confirmed: EMA, RSI, MACD, ADX, Volume, ATR",
                     "Signal Time": now_bst
+                }
+
+                log_signal({
+                    **row,
+                    "ema_diff": l15["EMA20"] - l15["EMA50"],
+                    "rsi": l15["RSI"],
+                    "macd_hist": l15["MACD"] - l15["MACD_Signal"],
+                    "adx": l15["ADX"],
+                    "atr": l15["ATR"],
+                    "atr_ratio": l15["ATR"] / entry,
+                    "rvol": l15["RVOL"]
                 })
+
+                results.append(row)
 
     return pd.DataFrame(results), datetime.now(pytz.timezone("Asia/Dhaka")).strftime("%Y-%m-%d %H:%M:%S")

@@ -1,9 +1,10 @@
+
 import streamlit as st
 from scanner import scan_market
 from datetime import datetime
 
 st.set_page_config(page_title="Nihar's Signal Scanner", layout="wide")
-st.title("📈 Nihar's Signal Scanner (Live Trading)")
+st.title("📈 Nihar's Signal Scanner")
 
 with st.spinner("🔍 Scanning Binance Futures..."):
     signals, scan_time = scan_market()
@@ -22,6 +23,7 @@ else:
             st.subheader(f"🪙 {row['Coin']} - {row['Type']}")
             st.write(f"**Detected by:** {row['Why Detected']}")
             st.write(f"🕒 Signal Time: `{row['Signal Time']}`")
+            st.write(f"**Entry Price:** `{row['Entry']}`")
         with col2:
             st.metric("Confidence", f"{row['Confidence']}%")
         with col3:
