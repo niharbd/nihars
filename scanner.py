@@ -1,55 +1,76 @@
+import pandas as pd
 import requests
 from datetime import datetime
 import pytz
-import pandas as pd
-import random
+from utils import fetch_klines
 
-def scan_market():
+def get_all_usdt_futures_symbols():
     url = "https://fapi.binance.com/fapi/v1/exchangeInfo"
-    response = requests.get(url)
-    data = response.json()
-
-    if "symbols" not in data:
+    try:
+        response = requests.get(url)
+        data = response.json()
+        return [
+            s["symbol"] for s in data["symbols"]
+            if s["contractType"] == "PERPETUAL" and s["quoteAsset"] == "USDT"
+        ]
+    except Exception as e:
+        print("Error fetching symbols:", e)
         return []
 
-    usdt_pairs = [s["symbol"] for s in data["symbols"]
-                  if s["contractType"] == "PERPETUAL" and s["quoteAsset"] == "USDT"]
-
-    url_price = "https://fapi.binance.com/fapi/v1/ticker/price"
-    prices = {item["symbol"]: float(item["price"]) for item in requests.get(url_price).json()}
-
-    signals = []
-
-    for symbol in usdt_pairs:
-        price = prices.get(symbol)
-        if not price:
+def scan_market():
+    symbols = get_all_usdt_futures_symbols()
+    results = []
+    for symbol in symbols:
+        df = fetch_klines(symbol)
+        if df is None or df.empty:
             continue
 
-        # Simple logic for demonstration: Alternate breakout and breakdown
-        signal_type = "Breakout" if hash(symbol) % 2 == 0 else "Breakdown"
-        confidence = random.choice([80, 85, 90, 95])
+        # Indicators
+        df["EMA20"] = df["Close"].ewm(span=20).mean()
+        df["EMA50"] = df["Close"].ewm(span=50).mean()
+        df["RSI"] = compute_rsi(df["Close"], 14)
+        df["VolumeMA"] = df["Volume"].rolling(window=20).mean()
 
-        if signal_type == "Breakout":
-            tp = round(entry_price * 1.05, 4)  # 5% above
-            sl = round(entry_price * 0.98, 4)  # 2% below
-        else:  # Breakdown
-            tp = round(entry_price * 0.95, 4)  # 5% below ⬅️ FIXED
-            sl = round(entry_price * 1.02, 4)  # 2% above ⬅️ FIXED
+        latest = df.iloc[-1]
 
+        # Breakout & Breakdown logic
+        breakout = (
+            latest["Close"] > latest["EMA20"] > latest["EMA50"] and
+            latest["RSI"] > 60 and
+            latest["Volume"] > latest["VolumeMA"]
+        )
+        breakdown = (
+            latest["Close"] < latest["EMA20"] < latest["EMA50"] and
+            latest["RSI"] < 40 and
+            latest["Volume"] > latest["VolumeMA"]
+        )
 
-        # Convert UTC to BST (Bangladesh Standard Time)
-        now_bst = datetime.utcnow().replace(tzinfo=pytz.UTC).astimezone(pytz.timezone("Asia/Dhaka"))
-        timestamp = now_bst.strftime("%Y-%m-%d %H:%M:%S")
+        if breakout or breakdown:
+            entry = latest["Close"]
+            signal_type = "Breakout" if breakout else "Breakdown"
+            tp = round(entry * 1.05, 4)
+            sl = round(entry * 0.98, 4)
+            now_bst = datetime.now(pytz.timezone("Asia/Dhaka")).strftime("%Y-%m-%d %H:%M:%S")
 
-        signals.append({
-            "Coin": symbol,
-            "Type": signal_type,
-            "Confidence": f"{confidence}%",
-            "Entry": round(price, 4),
-            "TP": tp,
-            "SL": sl,
-            "Why Detected": "Volume spike + EMA trend + RSI confirmation",
-            "Signal Time": timestamp
-        })
+            results.append({
+                "Coin": symbol,
+                "Type": signal_type,
+                "Confidence": 85,
+                "Entry": entry,
+                "TP": tp,
+                "SL": sl,
+                "Why Detected": "Volume spike + EMA trend + RSI confirmation",
+                "Signal Time": now_bst
+            })
 
-    return pd.DataFrame(signals)
+    return pd.DataFrame(results)
+
+def compute_rsi(series, period=14):
+    delta = series.diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    avg_gain = gain.rolling(window=period).mean()
+    avg_loss = loss.rolling(window=period).mean()
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
