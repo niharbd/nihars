@@ -1,32 +1,31 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+import pytz
 from scanner import scan_market
 
-# Set up Streamlit page
 st.set_page_config(page_title="📈 Nihar's Signal Scanner", layout="wide")
 st.title("📈 Nihar's Signal Scanner (Live Trading)")
 
-# Fetch signals
-signals = scan_market()
+raw_signals = scan_market()
+signals_df = pd.DataFrame(raw_signals)
 
-if not signals or signals.empty:
+BST = pytz.timezone("Asia/Dhaka")
+now_bst = datetime.now(BST).strftime("%Y-%m-%d %H:%M:%S")
+
+if not signals_df.empty:
+    signals_df['signal_time'] = now_bst
+    signals_df = signals_df[signals_df['confidence'] >= 80]
+    signals_df = signals_df[[
+        'symbol', 'type', 'confidence', 'entry', 'tp', 'sl', 'reason', 'signal_time'
+    ]]
+
+if signals_df.empty:
     st.info("No valid breakout or breakdown signals detected right now.")
 else:
-    st.markdown("### ✅ High Confidence Signals (≥80%)")
+    st.dataframe(signals_df)
 
-    styled_df = signals.style.format({
-        "Entry": "{:.4f}",
-        "TP1": "{:.4f}",
-        "TP2": "{:.4f}",
-        "TP3": "{:.4f}",
-        "SL": "{:.4f}",
-    })
-    st.dataframe(styled_df)
-
-# Auto-refresh every 10 minutes
 st.markdown(
-    f"<script>setTimeout(function(){{window.location.reload();}}, {10 * 60 * 1000});</script>",
+    "<script>setTimeout(function(){window.location.reload();}, 600000);</script>",
     unsafe_allow_html=True
 )
-
