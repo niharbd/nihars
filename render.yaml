@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 services:
   - type: web
     name: nihar-signal-scanner
@@ -6,12 +5,3 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: streamlit run app.py
     plan: free
-=======
-services:
-  - type: web
-    name: nihar-signal-scanner
-    env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: streamlit run app.py
-    plan: free
->>>>>>> 0b5850d12ca4fedb8addea987bc32f06bbc76a8a
