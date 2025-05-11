@@ -1,22 +1,29 @@
 import streamlit as st
-import pandas as pd
 from scanner import scan_market
+from datetime import datetime
+import pytz
 
-st.set_page_config(page_title="📈 Nihar's Signal Scanner", layout="wide")
+st.set_page_config(page_title="Nihar's Signal Scanner", layout="wide")
 st.title("📈 Nihar's Signal Scanner (Live Trading)")
 
-# Fetch signals
-signals = scan_market()
+with st.spinner("⏳ Scanning market..."):
+    df, scan_time = scan_market()
 
-# Display signal time and auto-refresh info
-st.markdown("🔄 Updated every 10 minutes. Showing real-time signals (BST).")
+st.markdown(f"🕒 **Last Scanned:** `{scan_time}` BST")
+st.markdown("⏱️ Auto-refresh every 10 minutes (via UptimeRobot ping)")
 
-# If no signals
-if signals.empty:
-    st.info("No valid breakout or breakdown signals detected right now.")
+st.divider()
+
+if df.empty:
+    st.warning("⚠️ No high-confidence signals found.")
 else:
-    st.dataframe(signals.style.format({
-        "Entry": "{:.4f}", "TP": "{:.4f}", "SL": "{:.4f}"
-    }), use_container_width=True)
-
-    st.markdown("✅ Only coins with RSI, EMA and volume confirmation logic shown.")
+    for _, row in df.iterrows():
+        col1, col2, col3 = st.columns([2, 1, 1])
+        with col1:
+            st.subheader(f"🪙 {row['Coin']} - {row['Type']}")
+            st.write(f"**Detected:** {row['Why Detected']}")
+            st.write(f"**Signal Time:** `{row['Signal Time']}`")
+        with col2:
+            st.metric("Confidence", f"{row['Confidence']}%")
+        with col3:
+            st.success(f"TP: {row['TP']}  \nSL: {row['SL']}")
